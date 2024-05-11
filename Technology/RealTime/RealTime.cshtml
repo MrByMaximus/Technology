@@ -1,0 +1,94 @@
+﻿@using RBS_Core.Helpers
+@{
+    var dateModel = StaticMethod.GetDateModel(
+        dateBegin: Context.Session.Get<DateTime?>("DateBegin") ?? DateTime.Now,
+        dateEnd: Context.Session.Get<DateTime?>("DateEnd") ?? DateTime.Now,
+        dateFormat: DateFormat.ShortDateShortTime
+        );
+}
+
+
+<script type="text/javascript">
+
+    window.moduleContext = {
+        GetTechnologyTree: '@Url.Action("GetTechnologyTree", "Technology")',
+        GetTechnologyRealTimeData: '@Url.Action("GetTechnologyRealTimeData", "Technology")',
+
+        GetFavorites: '@Url.Action("GetFavorites", "Technology")',
+        SaveFavorites: '@Url.Action("SaveFavorites", "Technology")',
+        DeleteFavorites: '@Url.Action("DeleteFavorites", "Technology")'
+    }
+
+</script>
+
+
+<link href="~/build/modules/common/Technology/report-builder.min.css" rel="stylesheet" asp-append-version="true" />
+
+<script src="~/build/modules/common/Technology/real-time.min.js" asp-append-version="true"></script>
+
+
+<div class="subView">
+
+    <div class="subPanel">
+
+
+        <div class="subPanelDiv">
+            <button onclick="window.globalRefresh()" style="width: 100px;" class="button small dark">Обновить</button>
+        </div>
+
+        <div class="subPanelDiv customToggle" id="customToggle">
+
+            <div id="favoritesContainer" class="customToggleChild">
+                <div id="favoriteLookup"></div>
+                <a title="Добавить в избранное" style="cursor: pointer;" onclick="Technology.ReportBuilder.AddToFavorites2()">
+                    <i id="starIcon" class="material-icons md-26" style="margin-left: 10px; margin-right: 10px; margin-top: 5px;">star_border</i>
+                </a>
+            </div>
+            <div id="searchContainer" class="customToggleChild">
+                <div id="search-treeview"></div>
+            </div>
+
+            <div id="showFavorites" class="customToggleChild customToggleButton">
+                <a title="Показать избранное" style="cursor: pointer;" onclick="Technology.ReportBuilder.ShowFavorites2(true)">
+                    <i class="material-icons md-default md-26" style="margin-left: 0px; margin-right: 0px;">star</i>
+                </a>
+            </div>
+            <div id="showSearch" class="customToggleChild customToggleButton">
+                <a title="Показать Поиск" style="cursor: pointer;" onclick="Technology.ReportBuilder.ShowFavorites2(false)">
+                    <i class="material-icons md-default md-26" style="margin-left: 0px; margin-right: 0px;">search</i>
+                </a>
+            </div>
+        </div>
+
+        <div class="subPanelDiv right">
+            <div id="warning_request" style="display:none;">
+                <span style="font-size: 22pt;color: #d82804;">!</span>
+            </div>
+        </div>
+        <div class="subPanelDiv right">
+            <div id="time_request"></div>
+        </div>
+    </div>
+
+    <div class="subPanelLine"></div>
+
+    <div class="subViewContent" id="subViewContent">
+        <div id="tableContainer" style="width: 100%; height: 100%;">
+            <div id="one" class="split split-horizontal">
+                <div id="treeContainer" style="min-width: 300px;">
+                    <div id="treeView2" style="width: 100%; height: 100%; overflow: hidden;"></div>
+                </div>
+            </div>
+            <div id="two" class="split split-horizontal">
+                <div id="gridContainer" style="width: 100%; height: 100%; overflow: hidden;">
+                    <div id="gridRealTime" style="width: 100%; height: 100%; overflow: hidden; display: none;"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="favoritePopup">
+</div>

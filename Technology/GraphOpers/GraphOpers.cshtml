@@ -1,0 +1,145 @@
+﻿
+<link href="~/build/modules/common/Technology/report-builder.min.css" rel="stylesheet" asp-append-version="true" />
+<link href="~/build/modules/common/Technology/graph-opers.min.css" rel="stylesheet" asp-append-version="true" />
+<script src="~/build/modules/common/Technology/graph-opers.min.js" asp-append-version="true"></script>
+
+<div class="module-view module-view_fixed">
+    <div class="module-view__content">
+        <div class="tree-container module-view module-view_fixed">
+            <div class="tree-container__header">
+                <div id="search-tree" style="flex: 1;"></div>
+            </div>
+
+            <div class="tree-container__line"></div>
+
+            <div class="tree-container__content module-view__content">
+                <div class="tree-view"></div>
+            </div>
+        </div>
+        <div class="data-container module-view module-view_fixed">
+            <div class="data-container__header module-view__panel">
+                <div class="module-view__panel-div_right">
+                    <div id="reset-button"></div>
+                </div>
+                <div class="module-view__panel-div_right">
+                    <div id="dx-icon-preferences"></div>
+                </div>
+            </div>
+
+            <div class="module-view__line"></div>
+
+            <div class="data-container__content module-view__content">
+                <!--Одна-->
+                <div id="1" style="width: 100%; height: 100%; display: none;">
+                    <div id="10" style="width: 100%; height: 100%; border: 1px solid;"></div>
+                </div>
+
+                <!--Две-->
+                <div id="2" style="width: 100%; height: 100%; display: none;">
+                    <div id="20" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                    <div id="21" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                </div>
+
+                <!--Три-->
+                <div id="3" style="width: 100%; height: 100%; display: none;">
+                    <div id="30" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    <div id="31" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    <div id="32" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                </div>
+
+                <!--Четыре-->
+                <div id="4" style="width: 100%; height: 100%; display: none;">
+                    <div style="width: 50%; height: 100%; float: left">
+                        <div id="40" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                        <div id="41" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                    </div>
+                    <div style="width: 50%; height: 100%; float: left">
+                        <div id="42" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                        <div id="43" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                    </div>
+                </div>
+
+                <!--Пять-->
+                <div id="5" style="width: 100%; height: 100%; display: none;">
+                    <div style="width: 50%; height: 100%; float: left">
+                        <div id="50" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="51" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="52" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    </div>
+                    <div style="width: 50%; height: 100%; float: left">
+                        <div id="53" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="54" style="width: 100%; height: 66%; border: 1px solid;"></div>
+                    </div>
+                </div>
+
+                <!--Шесть-->
+                <div id="6" style="width: 100%; height: 100%; display: none;">
+                    <div style="width: 50%; height: 100%; float: left">
+                        <div id="60" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="61" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="62" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    </div>
+                    <div style="width: 50%; height: 100%; float: left">
+                        <div id="63" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="64" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="65" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    </div>
+                </div>
+
+                <!--Семь-->
+                <div id="7" style="width: 100%; height: 100%; display: none;">
+                    <div style="width: 33%; height: 100%; float: left">
+                        <div id="70" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="71" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="72" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    </div>
+                    <div style="width: 33%; height: 100%; float: left">
+                        <div id="73" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                        <div id="74" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                    </div>
+                    <div style="width: 33%; height: 100%; float: left">
+                        <div id="75" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                        <div id="76" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                    </div>
+                </div>
+
+                <!--Восемь-->
+                <div id="8" style="width: 100%; height: 100%; display: none;">
+                    <div style="width: 33%; height: 100%; float: left">
+                        <div id="80" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="81" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="82" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    </div>
+                    <div style="width: 33%; height: 100%; float: left">
+                        <div id="83" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="84" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="85" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    </div>
+                    <div style="width: 33%; height: 100%; float: left">
+                        <div id="86" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                        <div id="87" style="width: 100%; height: 50%; border: 1px solid;"></div>
+                    </div>
+                </div>
+
+                <!--Девять-->
+                <div id="9" style="width: 100%; height: 100%; display: none;">
+                    <div style="width: 33%; height: 100%; float: left">
+                        <div id="90" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="91" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="92" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    </div>
+                    <div style="width: 33%; height: 100%; float: left">
+                        <div id="93" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="94" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="95" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    </div>
+                    <div style="width: 33%; height: 100%; float: left">
+                        <div id="96" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="97" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                        <div id="98" style="width: 100%; height: 33%; border: 1px solid;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

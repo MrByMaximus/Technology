@@ -1,0 +1,1700 @@
+﻿<script type="text/javascript">
+    var startDate = new Date();
+    startDate.setDate(startDate.getDate() - 1);
+
+    var endDate = new Date();
+
+    var ArraySelect = {
+        dateStart: localStorage._dateFirst ? new Date(localStorage._dateFirst) : startDate,
+        dateEnd: localStorage._dateSecond ? new Date(localStorage._dateSecond) : endDate
+    };
+
+    function getdxGrid() {
+        let dxGridTableResult = $('#dxTableResult').dxDataGrid(tableResult).dxDataGrid('instance');
+        dxGridTableResult.option("disabled", true);
+        disabledAll(true);
+        loadDataStatResult(-1).done(function (response) {
+            dxGridTableResult.option("disabled", false);
+            disabledAll(false);
+            if (response[0]) {
+                sessionResponse = response[0].SESSION_;
+            }
+            else {
+                sessionResponse = null;
+            }
+            dataSource = new DevExpress.data.DataSource({
+                store: response
+            });
+            dxGridTableResult.option('dataSource', dataSource);
+        });
+
+        $("#dxTableResult").delay(600).show(0);
+    };
+
+    window.showCharts = function (data/*, filter*/) {
+        if (data) {
+            showChartSelectionGrid(); // SecondaryFuncPartial
+
+            // Выбранные значения заносим в объект, после чего можно вызывать метод экспорта в эксель
+            ArraySelect.id_stat_ = data.ID_STAT_EL;
+            ArraySelect.session = data.SESSION_;
+
+            loadDataChartPPK(data.ID_STAT_EL, data.SESSION_, data.AVGVAR, data.SIGMA).done(function (response) {
+                showOnCancel();
+                if (response.length != 0) {
+                    let values = [];
+                    $.each(response, function (index, data) {
+                        $.each(data, function (key, value) {
+                            if (key === "X") {
+                                values.push(value);
+                            }
+                        });
+                    });
+
+                    let valuesForMinMax = values.filter(function (val) {
+                        return val !== null;
+                    });
+
+                    let maxSource = Math.max.apply(null, valuesForMinMax);
+                    let minSource = Math.min.apply(null, valuesForMinMax);
+
+                    let startValue = undefined;
+                    let endValue = undefined;
+
+                    let TpMax = response[0].L_MAX != null ? response[0].L_MAX : 100;
+                    let TpMin = response[0].L_MIN != null ? response[0].L_MIN : 0;
+
+                    let sigmaPlus = response[0].SIGMA_PLUS != null ? response[0].SIGMA_PLUS : null;
+                    let sigmaMinus = response[0].SIGMA_MINUS != null ? response[0].SIGMA_MINUS : null;
+
+                    let maxValue = TpMax >= sigmaPlus ? TpMax : sigmaPlus;
+                    let minValue = TpMin <= sigmaMinus ? TpMin : sigmaMinus;
+
+                    //let TpMax = filter.TpMax;
+                    //let TpMin = filter.TpMin;
+
+                    if (maxSource >= maxValue) {
+                        endValue = maxSource
+                    } else {
+                        endValue = maxValue/* + 0.5*/
+                    }
+
+                    if (minSource >= minValue) {
+                        startValue = minValue/* - 0.5*/
+                    } else {
+                        startValue = minSource
+                    }
+
+                    let arg = {
+                        visualRange: {
+                            startValue: startValue,
+                            endValue: endValue
+                        },
+                        constantLines: [
+                            {
+                                label: { text: "Tp Max " + TpMax },
+                                value: TpMax,
+                                color: "#ff33cc",
+                                dashStyle: "dash",
+                                paddingLeftRight: -80,
+                                width: 3
+                            },
+                            {
+                                label: { text: "Tp Min " + TpMin },
+                                value: TpMin,
+                                color: "#ff33cc",
+                                dashStyle: "dash",
+                                width: 3
+                            },
+                            {
+                                label: { text: "(+)Сигма " + sigmaPlus },
+                                value: sigmaPlus,
+                                color: "#1dacd6",
+                                dashStyle: "dash",
+                                paddingLeftRight: -80,
+                                paddingTopBottom: 30,
+                                width: 3
+                            },
+                            {
+                                label: { text: " (-)Сигма " + sigmaMinus },
+                                value: sigmaMinus,
+                                color: "#1dacd6",
+                                dashStyle: "dash",
+                                paddingTopBottom: 50,
+                                width: 3
+                            }
+                        ]
+                    };
+
+                    chartPPK.argumentAxis = arg;
+                    chartPPK.dataSource = response;
+
+                    $("#chartPPK").dxChart(chartPPK);
+                }
+                else {
+                    DevExpress.ui.notify("Ошибка. График PPK не построен", "warning", 500);
+                }
+            });
+
+            loadDataChartStatAnalysis(data.ID_STAT_EL, data.AVGVAR, data.L_MIN_CALC, data.L_MAX_CALC, data.SESSION_, data.SIGMA).done(function (response) {
+                if (response.length != 0) {
+                    let values = [];
+                    $.each(response, function (index, data) {
+                        $.each(data, function (key, value) {
+                            if (key === "VALUE") {
+                                values.push(value);
+                            }
+                        });
+                    });
+
+                    let valuesForMinMax = values.filter(function (val) {
+                        return val !== null;
+                    });
+
+                    let maxSource = Math.max.apply(null, valuesForMinMax);
+                    let minSource = Math.min.apply(null, valuesForMinMax);
+
+                    let startValue = undefined;
+                    let endValue = undefined;
+
+                    let TpMax = response[0].L_MAX != null /*&& elementConstantLines.some(i => i == 0)*/ ? response[0].L_MAX : /*null*/ 100;
+                    let TpMin = response[0].L_MIN != null /*&& elementConstantLines.some(i => i == 1)*/ ? response[0].L_MIN : /*null*/ 0;
+
+                    //let TpMax = filter.TpMax;
+                    //let TpMin = filter.TpMin;
+
+                    let UCL = response[0].L_MAX_T1 != null /*&& elementConstantLines.some(i => i == 2)*/ ? response[0].L_MAX_T1 : /*null*/ 100;
+                    let LCL = response[0].L_MIN_T1 != null /*&& elementConstantLines.some(i => i == 3)*/ ? response[0].L_MIN_T1 : /*null*/ 0;
+
+                    let goal = response[0].GOAL != null /*&& elementConstantLines.some(i => i == 4)*/ ? response[0].GOAL : null;
+
+                    let sigmaPlus = response[0].SIGMA_PLUS != null /*&& elementConstantLines.some(i => i == 5)*/ ? response[0].SIGMA_PLUS : null;
+                    let sigmaMinus = response[0].SIGMA_MINUS != null /*&& elementConstantLines.some(i => i == 6)*/ ? response[0].SIGMA_MINUS : null;
+
+                    let maxValue_ = TpMax >= UCL ? TpMax : UCL;
+                    let minValue_ = TpMin <= LCL ? TpMin : LCL;
+
+                    let maxValue = maxValue_ >= sigmaPlus ? maxValue_ : sigmaPlus;
+                    let minValue = minValue_ <= sigmaMinus ? minValue_ : sigmaMinus;
+
+                    if (maxSource > maxValue) {
+                        startValue = maxSource
+                    } else {
+                        startValue = maxValue
+                    }
+
+                    if (minSource > minValue) {
+                        endValue = minValue
+                    } else {
+                        endValue = minSource
+                    }
+
+                    // Отрисовка точек выше TpMax и UCL
+                    let pointValue = TpMax >= UCL ? UCL : TpMax;
+                    let customPoint = function (pointInfo) {
+                        return pointInfo.value > pointValue ? { color: 'red' } : {}
+                    };
+
+                    let valueAxis = {
+                        valueType: "numeric",
+                        valueMarginsEnabled: true,
+                        maxValueMargin: 0.1,
+                        visualRange: {
+                            startValue: startValue,
+                            endValue: endValue
+                        },
+                        constantLines: [
+                            {
+                                label: { text: "Tp Max " + TpMax },
+                                value: TpMax,
+                                color: "#ff33cc",
+                                dashStyle: "dash",
+                                paddingLeftRight: 100,
+                                width: 3
+                            },
+                            {
+                                label: { text: "Tp Min " + TpMin },
+                                value: TpMin,
+                                color: "#ff33cc",
+                                dashStyle: "dash",
+                                paddingLeftRight: 100,
+                                width: 3
+                            },
+                            {
+                                label: { text: "UCL " + UCL },
+                                value: UCL,
+                                color: "#e59e1f",
+                                dashStyle: "dash",
+                                width: 3
+                            },
+                            {
+                                label: { text: "LCL " + LCL },
+                                value: LCL,
+                                color: "#e59e1f",
+                                dashStyle: "dash",
+                                width: 3
+                            },
+                            {
+                                label: { text: "Цель " + goal },
+                                value: goal,
+                                color: "#66ff00",
+                                dashStyle: "dash",
+                                width: 3
+                            },
+                            {
+                                label: { text: "(+)Сигма " + sigmaPlus },
+                                value: sigmaPlus,
+                                color: "#1dacd6",
+                                dashStyle: "dash",
+                                paddingLeftRight: 200,
+                                width: 3
+                            },
+                            {
+                                label: { text: " (-)Сигма " + sigmaMinus },
+                                value: sigmaMinus,
+                                color: "#1dacd6",
+                                dashStyle: "dash",
+                                paddingLeftRight: 200,
+                                width: 3
+                            }
+                        ]
+                    };
+
+                    valueAxis.constantLines = valueAxis.constantLines.filter((e, i) => elementConstantLines.some(j => i === j));
+
+                    let nameEl = response[0].NAME_EL;
+
+                    let series = {
+                        valueField: "VALUE_Y", name: nameEl, color: "blue"
+                    };
+
+                    chartStatAnalysis.valueAxis = valueAxis;
+                    chartStatAnalysis.customizePoint = customPoint;
+                    chartStatAnalysis.series = series;
+                    chartStatAnalysis.dataSource = response;
+
+                    $('#chartStatAnalysis').dxChart(chartStatAnalysis).dxChart("instance");
+                }
+                else {
+                    DevExpress.ui.notify("Данных нет. График не построен", "warning", 3000);
+                }
+            });
+        }
+    };
+
+    function contentElementName(name, px) {
+        return $(`<p style='margin: 0px ${px}px 0px 0px; display: inline;' />`).text(name)
+    }
+
+    // необходимо для filter границ графика
+    var elementConstantLines = [0, 1, 2, 3, 4, 5, 6];
+
+    function contentElementSwitch(n) {
+        return $("<div />").dxSwitch({
+            value: true,
+            width: 50,
+            onValueChanged: function (e) {
+                if (dataChart) {
+                    showCharts(dataChart);
+
+                    if (e.value) {
+                        elementConstantLines.push(n);
+                    }
+                    else {
+                        elementConstantLines.splice(elementConstantLines.indexOf(n), 1);
+                    }
+                }
+                else {
+                    DevExpress.ui.notify("Данных на перепостроение графика с измененными границами нет", "warning");
+                }
+            }
+        });
+    }
+
+    var popup = $('#popup').dxPopup({
+        width: 200,
+        height: 230,
+        visible: false,
+        showTitle: false,
+        closeOnOutsideClick: true,
+        contentTemplate(contentElement) {
+            contentElement.append(
+                contentElementName("Tp Max ", 20),
+                contentElementSwitch(0),
+                $("<br />"),
+                contentElementName("Tp Min ", 22),
+                contentElementSwitch(1),
+                $("<br />"),
+                contentElementName("UCL ", 39),
+                contentElementSwitch(2),
+                $("<br />"),
+                contentElementName("LCL ", 43),
+                contentElementSwitch(3),
+                $("<br />"),
+                contentElementName("Цель ", 32),
+                contentElementSwitch(4),
+                $("<br />"),
+                contentElementName("Сигма(+) ", 7),
+                contentElementSwitch(5),
+                $("<br />"),
+                contentElementName("Сигма(-) ", 11),
+                contentElementSwitch(6)
+            )
+        }
+    }).dxPopup('instance');
+
+    $(document).ready(function () {
+        $("#export-excel").hide();
+        $("#export-excel-mini-tab").hide();
+        $("#popup-line").hide();
+
+        if (showAllWidgets()) {
+            getdxGrid();
+            getStatMarks();
+            $("#dxDropDownTreeBox").show();
+            $("#buttonUpdate").show();
+
+            if (localStorage._idSampling)
+                dxDropDownTreeBox.option('value', localStorage._idSampling);
+        } else {
+            hideAllElements();
+        }
+    });
+
+    function showAllWidgets() {
+        let visible = localStorage._idLP == null && localStorage._idCH == null || localStorage._idMark == null || localStorage._stdId == null || localStorage._sizeId == null || localStorage._idSampling == null;
+        return !visible;
+    }
+
+
+</script>
+
+
+<!-- Вспомогательные функции -->
+<script>
+    function hideAllElements() {
+        //$("#selectBoxSeries").hide();
+        $("#selectBoxMarks").hide();
+        $("#selectBoxStds").hide();
+        $("#selectBoxSize").hide();
+        $("#buttonUpdate").hide();
+
+        //$("#export-excel").hide();
+    }
+
+    function hideMain() {
+        $("#export-excel").hide();
+        $("#export-excel-mini-tab").hide();
+        $("#popup-line").hide();
+        $("#dxTableResult").hide();
+        $("#chartPPK").hide();
+        $("#chartStatAnalysis").hide();
+
+    }
+
+    function showMain() {
+        $("#dxTableResult").show();
+        $("#chartPPK").show();
+        $("#chartStatAnalysis").show();
+    }
+
+    function showChartSelectionGrid() {
+        $("#chartPPK").fadeIn(4000);
+        $("#export-excel").fadeIn(4000);
+        //$("#export-excel-mini-tab").fadeIn(4000);
+        $("#chartStatAnalysis").fadeIn(5000);
+    }
+
+    function showOnCancel() {
+        $("#dxTableStat").show();
+        $("#chartInMelt").show();
+        $("#chartStatAnalysis").show();
+        $("#chartPPK").show();
+        $("#export-excel").show();
+        $("#export-excel-mini-tab").show();
+        $("#popup-line").show();
+    }
+
+    function hideOnCancel() {
+        $("#dxTableStat").hide();
+        $("#chartInMelt").hide();
+        $("#chartStatAnalysis").hide();
+        $("#chartPPK").hide();
+        $("#export-excel").hide();
+        $("#export-excel-mini-tab").hide();
+        $("#popup-line").hide();
+    }
+
+    function disabledAll(boolValue) {
+        document.getElementById("buttonUpdate").disabled = boolValue;
+        exportExcelMiniTab.option("disabled", boolValue);
+        selectMarks.option("disabled", boolValue);
+        dateBoxStart.option("disabled", boolValue);
+        dateBoxEnd.option("disabled", boolValue);
+        selectBoxCastPlant.option("disabled", boolValue);
+        selectBoxSeries.option("disabled", boolValue);
+        selectMarks.option("disabled", boolValue);
+        selectStds.option("disabled", boolValue);
+        selectSize.option("disabled", boolValue);
+        dxDropDownTreeBox.option("disabled", boolValue);
+        selectBoxSmena.option("disabled", boolValue);
+        exportExcelMiniTab.option("disabled", boolValue);
+    }
+
+    function showPage() {
+        document.querySelector(".statAnalys").classList.toggle("hide");
+        document.querySelector(".statAnalys-inMelt").classList.toggle("hide");
+    }
+
+</script>
+
+<!-- Виджеты -->
+<script>
+    // Виджет даты начала
+    var dateBoxStart = $("#dateBoxStart").dxDateBox({
+        value: ArraySelect.dateStart,
+        width: 120,
+        onValueChanged: function (data) {
+            ArraySelect.dateStart = data.value;
+            getStatMarks();
+            $("#selectBoxMarks").show();
+
+            $("#buttonUpdate").hide();
+            selectMarks.option('value', null);
+            $("#selectBoxStds").hide();
+            $("#selectBoxSize").hide();
+            $("#dxDropDownTreeBox").hide();
+
+
+            hideMain();
+        }
+    }).dxDateBox("instance");
+
+    // Виджет даты окончания
+    var dateBoxEnd = $("#dateBoxEnd").dxDateBox({
+        value: ArraySelect.dateEnd,
+        width: 120,
+        onValueChanged: function (data) {
+            ArraySelect.dateEnd = data.value;
+            getStatMarks();
+            $("#selectBoxMarks").show();
+
+            $("#buttonUpdate").hide();
+            selectMarks.option('value', null);
+            $("#selectBoxStds").hide();
+            $("#selectBoxSize").hide();
+            $("#dxDropDownTreeBox").hide();
+
+            hideMain();
+        }
+    }).dxDateBox("instance");
+
+    var smena = [{
+        "SMENA_ID": 0,
+        "SMENA_NAME": "Все смены"
+    }, {
+        "SMENA_ID": 1,
+        "SMENA_NAME": "Смена А"
+    }, {
+        "SMENA_ID": 2,
+        "SMENA_NAME": "Смена Б"
+    }, {
+        "SMENA_ID": 3,
+        "SMENA_NAME": "Смена В"
+    }, {
+        "SMENA_ID": 4,
+        "SMENA_NAME": "Смена Г"
+    }];
+
+    idSmena = smena[0].SMENA_ID;
+
+    // Виджет (выпадающий список) смен
+    var selectBoxSmena = $("#selectBoxSmena").dxSelectBox({
+        dataSource: smena,
+        placeholder: "Выберите смену",
+        valueExpr: 'SMENA_ID',
+        displayExpr: 'SMENA_NAME',
+        searchEnabled: true,
+        value: smena[0].SMENA_ID,
+        width: 170,
+        onValueChanged: function (data) {
+            idSmena = data.value;
+        }
+    }).dxSelectBox("instance");
+
+    // Получение списка ЛП
+    var getCastPlant = new DevExpress.data.CustomStore({
+        loadMode: "raw",
+        load: function () {
+            return $.getJSON('@Url.Action("GetStatCastplant", "Technology")', {
+            });
+        }
+    });
+
+    // Виджет (выпадающий список) ЛП
+    var selectBoxCastPlant = $("#selectBoxCastPlant").dxSelectBox({
+        dataSource: getCastPlant,
+        placeholder: "Выберите ЛП",
+        valueExpr: 'CASTPLANT_ID',
+        displayExpr: 'CASTPLANT_NAME',
+        searchEnabled: true,
+        value: parseInt(localStorage._idLP),
+        width: 150,
+        onValueChanged: function (data) {
+            idLP = data.value;
+            getStatMarks();
+            $("#selectBoxSeries").show();
+
+            $("#buttonUpdate").hide();
+            $("#selectBoxStds").hide();
+            $("#selectBoxSize").hide();
+            $("#dxDropDownTreeBox").hide();
+
+            hideMain();
+        }
+    }).dxSelectBox("instance");
+
+    // Получения списка серии (чистоты)
+    var getStatSeries = new DevExpress.data.CustomStore({
+        loadMode: "raw",
+        load: function () {
+            return $.getJSON('@Url.Action("GetStatSeries", "Technology")', {
+            });
+        }
+    });
+
+    // Виджет серии (чистоты)
+    var selectBoxSeries = $("#selectBoxSeries").dxSelectBox({
+        dataSource: getStatSeries,
+        placeholder: "Выберите чистоту",
+        valueExpr: 'SERIES_ID',
+        displayExpr: 'SERIES_NAME',
+        searchEnabled: true,
+        width: 160,
+        value: parseInt(localStorage._idCH),
+        onValueChanged: function (data) {
+            idCH = data.value;
+            getStatMarks();
+            $("#selectBoxMarks").show();
+
+            $("#buttonUpdate").hide();
+            selectMarks.option('value', null);
+            $("#selectBoxStds").hide();
+            $("#selectBoxSize").hide();
+            //$("#selectBoxSampling").hide();
+            $("#dxDropDownTreeBox").hide();
+
+            hideMain();
+        }
+    }).dxSelectBox("instance");
+
+    // Получение марок
+    function getStatMarks() {
+        var getMarks = new DevExpress.data.CustomStore({
+            loadMode: "raw",
+            load: function () {
+                return $.getJSON('@Url.Action("GetStatMarks", "Technology")', {
+                    seriesId: window.idCH || parseInt(localStorage._idCH),
+                    castPlantId: window.idLP || parseInt(localStorage._idLP),
+                    date_Beg: ArraySelect.dateStart.toJSON(),
+                    date_End: ArraySelect.dateEnd.toJSON()
+                });
+            }
+        });
+        selectMarks.option('value', null);
+        selectMarks.option('dataSource', getMarks);
+        if (localStorage._idMark)
+            selectMarks.option('value', parseInt(localStorage._idMark));
+    };
+
+    // Виджет марок
+    var selectMarks = $("#selectBoxMarks").dxSelectBox({
+        valueExpr: 'MARK_ID',
+        displayExpr: 'MARK_NAME',
+        searchEnabled: true,
+        onValueChanged: function (data) {
+            idMark = data.value;
+            getDataSourceStds();
+
+            hideMain();
+        },
+        onSelectionChanged: function (e) {
+            if (e.selectedItem) {
+                markName = e.selectedItem.MARK_NAME;
+            }
+        },
+        onItemClick: function (e) {
+            selectStds.option('value', null);
+            $("#selectBoxStds").show();
+            $("#selectBoxSize").hide();
+            $("#dxDropDownTreeBox").hide();
+
+            $("#buttonUpdate").hide();
+        }
+    }).dxSelectBox("instance");
+
+    // Получение спецификаций
+    function getDataSourceStds() {
+        var getStds = new DevExpress.data.CustomStore({
+            loadMode: "raw",
+            load: function () {
+                return $.getJSON('@Url.Action("GetStatStds", "Technology")', {
+                    castplant_id: window.idLP || parseInt(localStorage._idLP),
+                    mark_id: window.idMark || parseInt(localStorage._idMark),
+                    date_Beg: ArraySelect.dateStart.toJSON(),
+                    date_End: ArraySelect.dateEnd.toJSON()
+                });
+            }
+        });
+        selectStds.option('value', null);
+        selectStds.option('dataSource', getStds);
+        if (localStorage._stdId) {
+            selectStds.option('value', parseInt(localStorage._stdId));
+        }
+    };
+
+    // Виджет спецификаций
+    var selectStds = $("#selectBoxStds").dxSelectBox({
+        valueExpr: 'STD_ID',
+        displayExpr: 'STD_NAME',
+        searchEnabled: true,
+        onValueChanged: function (data) {
+            stdId = data.value;
+
+            getDataSourceSize();
+            hideMain();
+        },
+        onSelectionChanged: function (e) {
+            if (e.selectedItem) {
+                stdName = e.selectedItem.STD_NAME;
+            }
+        },
+        onItemClick: function (e) {
+
+            selectSize.option('value', null);
+            $("#dxDropDownTreeBox").hide();
+            $("#selectBoxSize").show();
+            $("#buttonUpdate").hide();
+        }
+    }).dxSelectBox("instance");
+
+    // Получение сечения
+    function getDataSourceSize() {
+        var getSize = new DevExpress.data.CustomStore({
+            loadMode: "raw",
+            load: function () {
+                return $.getJSON('@Url.Action("GetStatSize", "Technology")', {
+                    std_id: window.stdId || parseInt(localStorage._stdId)
+                });
+            }
+        });
+        selectSize.option('value', null);
+        selectSize.option('dataSource', getSize);
+        if (localStorage._sizeId) {
+            selectSize.option('value', localStorage._sizeId);
+        }
+
+        if (localStorage._idSampling) {
+            setTimeout(() => dxDropDownTreeBox.option('value', parseInt(localStorage._idSampling)), 1000);
+        }
+    };
+
+    // Виджет сечения
+    var selectSize = $("#selectBoxSize").dxSelectBox({
+        valueExpr: 'SIZE_ID',
+        displayExpr: 'SIZE_NAME',
+        searchEnabled: true,
+        onValueChanged: function (data) {
+
+            sizeId = data.value;
+            hideMain();
+        },
+        onSelectionChanged: function (e) {
+            if (e.selectedItem) {
+                sizeName = e.selectedItem.SIZE_NAME;
+            }
+        },
+        onItemClick: function (e) {
+            dxDropDownTreeBox.option('value', null);
+            $("#dxDropDownTreeBox").show();
+            $("#buttonUpdate").hide();
+        }
+    }).dxSelectBox("instance");
+
+    var sampling = [{
+        ID: 1,
+        name: "Экспресс"
+    }, {
+        ID: 12,
+        name: "Товарные"
+    }, {
+        ID: 2,
+        name: "Разрешающие"
+    }, {
+        ID: 46,
+        name: "Содержание водорода"
+    }, {
+        ID: 999,
+        name: "Внутренняя структура"
+    }, {
+        ID: 49,
+        categoryId: 999,
+        name: "Макро плоские"
+    }, {
+        ID: 69,
+        categoryId: 999,
+        name: "Макро цилиндры"
+    }, {
+        ID: 70,
+        categoryId: 999,
+        name: "Макро чушка"
+    }, {
+        ID: 71,
+        categoryId: 999,
+        name: "Макро Зангер"
+    }, {
+        ID: 50,
+        categoryId: 999,
+        name: "Микро"
+    }, {
+        ID: 47,
+        categoryId: 999,
+        name: "Индекс плотности"
+    }, {
+        ID: 51,
+        categoryId: 999,
+        name: "Темплеты"
+    }, {
+        ID: 48,
+        categoryId: 999,
+        name: "Газоусадочная пористость"
+    }, {
+        ID: 52,
+        name: "PoDFA"
+    }, {
+        ID: 1000,
+        name: "Технологические параметры"
+    }
+    ];
+
+    // Виджет типа проб
+    var dxDropDownTreeBox = $("#dxDropDownTreeBox").dxDropDownBox({
+        //value: 1,
+        valueExpr: "ID",
+        displayExpr: "name",
+        placeholder: "Выберите тип пробы",
+        dataSource: sampling,
+        contentTemplate: function(e){
+                $treeView = $("<div>").dxTreeView({
+                    dataSource: e.component.getDataSource(),
+                    dataStructure: "plain",
+                    keyExpr: "ID",
+                    parentIdExpr: "categoryId",
+                    selectionMode: "single",
+                    displayExpr: "name",
+                    selectByClick: true,
+                    selectNodesRecursive: false,
+                    onItemSelectionChanged: function (args) {
+
+                        if (args.itemData.ID != 999) {
+                            idSampling = args.itemData.ID;
+                            var selectedKeys = args.component.getSelectedNodeKeys();
+                            e.component.option("value", selectedKeys);
+                            nameSampling = args.itemData.name;
+                            $("#buttonUpdate").show();
+                            hideMain();
+                        } else {
+                            $("#buttonUpdate").hide();
+                            dxDropDownTreeBox.option("value", null);
+                        }
+                    }
+                });
+
+            treeView = $treeView.dxTreeView("instance");
+
+            return $treeView;
+        }
+    }).dxDropDownBox("instance");
+
+    // Кнопка обновить
+    var update_Button = $("#buttonUpdate").on('click', function () {
+        //if (window.idSampling == 1000 && Math.ceil(Math.abs(ArraySelect.dateEnd.getTime() - ArraySelect.dateStart.getTime()) / (1000 * 3600 * 24)) > 2) {
+        //    DevExpress.ui.notify("Выбран большой интервал. Измените дату", "warning");
+        //}
+        //else if (window.idLP == 5 && window.idSampling == 1000) {
+        //    DevExpress.ui.notify("Технологические параметры только для площадки САЗ", "warning");
+        //}
+        //else {
+            addColumn();
+            hideMain();
+            $("#export-excel-mini-tab").show();
+            getdxGrid();
+        //}
+    });
+
+    // Кнопка экспорта в excel
+    $("#export-excel").dxButton({
+        hint: 'Экспорт',
+        icon: 'exportxlsx',
+        onClick: function (e) {
+            exportListExcel();
+        }
+    });
+
+    //Кнопка выгрузки в Minitab
+    var exportExcelMiniTab = $("#export-excel-mini-tab").dxButton({
+        text: 'Выгрузка MinTab',
+        onClick: function (e) {
+            exportListExcelMiniTab();
+        }
+    }).dxButton("instance");
+
+
+    $("#popup-line").dxButton({
+        text: 'Границы графика',
+        onClick: function (e) {
+            popup.show();
+        }
+    }).dxButton("instance");
+</script>
+
+<!-- Таблицы -->
+<script>
+    var selectionChangedRaised = false;
+    var selectionNumberBox = false;
+    var dataChart = null;
+    //var json = [];
+
+    //function addNewValuesTpMin(json, TpMin, id) {
+    //    if (json.some(e => e.id == id)) {
+    //        json.filter(e => e.id == id).map(m => m.TpMin = TpMin);
+    //    }
+    //    else {
+    //        json.push({ "TpMin": TpMin, "id": id, "TpMax": null });
+    //    }
+    //}
+
+    //function addNewValuesTpMax(json, TpMax, id) {
+    //    if (json.some(e => e.id == id)) {
+    //        json.filter(e => e.id == id).map(m => m.TpMax = TpMax);
+    //    }
+    //    else {
+    //        json.push({ "TpMax": TpMax, "id": id, "TpMin": null });
+    //    }
+    //}
+
+    var columns = [
+        { dataField: 'NAME_EL', caption: 'Наименование', width: '160px' },
+        { dataField: 'ID_STAT_EL', caption: 'ID_STAT_EL', width: '70px', visible: false },
+        { dataField: 'AVGVAR', caption: 'Среднее', width: '70px' },
+        { dataField: 'CP', caption: 'Cp', width: '70px' },
+        { dataField: 'CPK', caption: 'Cpk', width: '70px' },
+        { dataField: 'PP', caption: 'Pp', width: '70px' },
+        { dataField: 'PPK', caption: 'Ppk', width: '70px' },
+        { dataField: 'SIGMA', caption: 'Сигма', width: '70px' },
+        { dataField: 'L_MIN_CALC', caption: 'Мин. расч.', width: '90px' },
+        { dataField: 'L_MAX_CALC', caption: 'Макс. расч.', width: '70px' }
+    ];
+
+    function addColumn() {
+        if ((window.idSampling != 1000 || window.idSampling != 12) && columns.length == 13) {
+            let i = 0;
+            while (i < 3) {
+                columns.pop();
+                i++;
+            }
+        }
+
+        if ((window.idSampling == 1000 || window.idSampling == 12) && columns.length == 10) {
+            columns.push({
+                caption: 'Min', width: '70px', dataField: 'TPMIN',
+                cellTemplate: function (container, options) {
+                    $("<div>").dxNumberBox({
+                        value: options.data.L_MIN,
+                        disabled: String(options.data.ID_STAT_EL).length < 8,
+                        onValueChanged: function (e) {
+                            //addNewValuesTpMin(json, e.value, options.data.ID_STAT_EL);
+
+                            loadDataParam(options.data.ID_STAT_EL, e.value, null);
+                        }
+                    }).appendTo(container);
+                }
+            },
+                {
+                    caption: 'Max', width: '70px', dataField: 'TPMAX',
+                    cellTemplate: function (container, options) {
+                        $("<div>").dxNumberBox({
+                            value: options.data.L_MAX,
+                            disabled: String(options.data.ID_STAT_EL).length < 8,
+                            onValueChanged: function (e) {
+                                //addNewValuesTpMax(json, e.value, options.data.ID_STAT_EL);
+
+                                loadDataParam(options.data.ID_STAT_EL, null, e.value);
+                            }
+                        }).appendTo(container);
+                    }
+                },
+                { dataField: 'SURNAME', caption: 'Пользователь', width: '70px' });
+        }
+    }
+
+    var tableResult = {
+        columns: columns,
+        paging: {
+            pageSize: 15
+        },
+        onSelectionChanged: function (e) {
+            if (!selectionNumberBox && e.currentSelectedRowKeys.length > 0) {
+                //let filter = json.filter(el => el.id == e.currentSelectedRowKeys[0].ID_STAT_EL);
+                //if (filter.length == 1) {
+                dataChart = e.currentSelectedRowKeys[0];
+                showCharts(e.currentSelectedRowKeys[0]/*, filter[0]*/);
+                selectionChangedRaised = true;
+                //}
+                //else {
+                //    DevExpress.ui.notify("TpMin/TpMax не заполнены", "warning");
+                //}
+            }
+            selectionNumberBox = false;
+        },
+        onRowClick: function (e) {
+            if (!selectionChangedRaised) {
+                var dataGrid = e.component;
+                var keys = dataGrid.getSelectedRowKeys();
+                dataGrid.deselectRows(keys);
+                hideOnCancel();
+            }
+            selectionChangedRaised = false;
+        },
+        onCellClick: function (e) {
+            if (e.column.caption == 'Min' || e.column.caption == 'Max') {
+                selectionNumberBox = true;
+            }
+        },
+        selection: {
+            mode: "single"
+        },
+        allowColumnResizing: true,
+        columnResizingMode: "widget",
+        //width: 910,
+        height: window.innerHeight / 3
+    };
+
+    var tableResultInMelt = {
+        columns: columns,
+        paging: {
+            pageSize: 15
+        },
+        onSelectionChanged: function (e) {
+            if (!selectionNumberBox && e.currentSelectedRowKeys.length > 0) {
+                showChartsInMelt(e.currentSelectedRowKeys[0]);
+                selectionChangedRaised = true;
+            }
+            selectionNumberBox = false;
+        },
+        onRowClick: function (e) {
+            if (!selectionChangedRaised) {
+                var dataGrid = e.component;
+                var keys = dataGrid.getSelectedRowKeys();
+                dataGrid.deselectRows(keys);
+                hideOnCancel();
+            }
+            selectionChangedRaised = false;
+        },
+        onCellClick: function (e) {
+            if (e.column.caption == 'Min' || e.column.caption == 'Max') {
+                selectionNumberBox = true;
+            }
+        },
+        selection: {
+            mode: "single"
+        },
+        allowColumnResizing: true,
+        columnResizingMode: "widget",
+        //width: 910,
+        height: window.innerHeight / 3
+    };
+
+    var tableStat = {
+        columns: [
+            { dataField: 'VALUE', caption: 'Вес', width: '70px' },
+            { dataField: 'L_MIN', caption: 'Мин.', width: '70px' },
+            { dataField: 'L_MAX', caption: 'Макс.', width: '70px' }
+        ],
+        paging: {
+            pageSize: 8
+        },
+        allowColumnResizing: true,
+        columnResizingMode: "widget",
+        width: 210
+    };
+</script>
+
+<!-- ajax запросы -->
+<script>
+    function loadDataStatResult(_idMelt) {
+        var deferred = $.Deferred();
+        $.ajax({
+            url: '@Url.Action("GetStatResult", "Technology")',
+            data: {
+                casthouse: window.idLP || localStorage._idLP,
+                d_b: ArraySelect.dateStart.toJSON(),
+                d_e: ArraySelect.dateEnd.toJSON(),
+                std_id: window.stdId || localStorage._stdId,
+                mark_id: window.idMark || localStorage._idMark,
+                melt_id: _idMelt,
+                typeId: window.idSampling || localStorage._idSampling,
+                series_id: window.idCH || parseInt(localStorage._idCH),
+                smena_id: window.idSmena,
+                size_id: window.sizeId || localStorage._sizeId
+            },
+            success: function (json) {
+                if (json) {
+                    var data = JSON.parse(json);
+                    deferred.resolve(data);
+                } else {
+                    deferred.reject("Ошибка в загрузке данных");
+                }
+            },
+            error: function (problem) {
+                deferred.reject(problem);
+            }
+        });
+
+        return deferred.promise();
+    };
+
+    function loadDataChartStatAnalysis(idStat, avg, lMin, lMax, session, sigma) {
+        var deferred = $.Deferred();
+        $.ajax({
+            url: '@Url.Action("GetStatTable", "Technology")',
+            data: {
+                idStat: idStat,
+                avg: avg,
+                l_min: lMin,
+                l_max: lMax,
+                session: session,
+                samplingId: window.idSampling || localStorage._idSampling,
+                casthouseId: window.idLP || localStorage._idLP,
+                sigmaPlus: ((sigma * 3) + avg).toPrecision(2),
+                sigmaMinus: (avg - (sigma * 3)).toPrecision(2)
+            },
+            success: function (json) {
+                if (json) {
+                    var data = JSON.parse(json);
+                    deferred.resolve(data);
+                } else {
+                    deferred.reject("Ошибка в загрузке данных");
+                }
+            },
+            error: function (problem) {
+                deferred.reject(problem);
+            }
+        });
+
+        return deferred.promise();
+    };
+
+    function loadDataChartPPK(idStat, session, avg, sigma) {
+        var deferred = $.Deferred();
+        $.ajax({
+            url: '@Url.Action("GetStatTablePPM", "Technology")',
+            data: {
+                idStat: idStat,
+                session: session,
+                sigmaPlus: (sigma * 3 + avg).toPrecision(2),
+                sigmaMinus: (avg - (sigma * 3)).toPrecision(2)
+            },
+            success: function (json) {
+                if (json) {
+                    var data = JSON.parse(json);
+                    deferred.resolve(data);
+                } else {
+                    deferred.reject("Ошибка в загрузке данных");
+                }
+            },
+            error: function (problem) {
+                deferred.reject(problem);
+            }
+        });
+
+        return deferred.promise();
+    };
+
+    function exportListExcel() {
+            $.ajax({
+                url: '@Url.Action("GetExcel", "Technology")',
+                //type: "POST",
+                data: {
+                    idStat: ArraySelect.id_stat_,
+                    session: ArraySelect.session,
+                    samplingId: window.idSampling,
+                    casthouseId: window.idLP || localStorage._idLP
+                },
+                success: function (result) {
+                    if (result.success) {
+
+                        var url = '@Url.Action("DownloadFile", "Technology")' +
+                            '?fileGuid=' + result.fileGuid +
+                            "&mimeType=" + result.mimeType +
+                            "&filename=" + encodeURIComponent(result.fileName);
+
+                        window.location.href = url;
+
+                    }
+                },
+                error: function (problem) {
+                    window.showNotification("Не удалось скачать файл", "Error");
+                }
+            });
+    };
+
+    function exportListExcelMiniTab() {
+
+        if (window.idSampling == 12) {
+            window.DevExpress.ui.dialog.confirm({
+                title: "Выгрузка MiniTab",
+                message: "Тех.параметры/Хим.элементы",
+                buttons: [{
+                    text: "Тех.параметры", onClick: function (e) {
+                        ajax(1)
+                    }
+                }, {
+                    text: "Хим.элементы", onClick: function (e) {
+                        ajax(2)
+                    }
+                }]
+            })
+        } else {
+            ajax(111)
+        }
+    };
+
+    function ajax(param) {
+        exportExcelMiniTab.option("disabled", true);
+        exportExcelMiniTab.option("text", "Загрузка...");
+        return $.ajax({
+                url: '@Url.Action("GetExcelTableMiniTab", "Technology")',
+                //type: "POST",
+                data: {
+                    session: window.sessionResponse,
+                    spec: window.markName + " " + window.stdName,
+                    samplingId: window.idSampling || localStorage._idSampling,
+                    chProd: param,
+                    casthouseId: window.idLP || localStorage._idLP
+                },
+            success: function (result) {
+                console.log("result", result);
+                    if (result.success) {
+                        var url = '@Url.Action("DownloadFile", "Technology")' +
+                            '?fileGuid=' + result.fileGuid +
+                            "&mimeType=" + result.mimeType +
+                            "&filename=" + encodeURIComponent(result.fileName);
+
+                        window.location.href = url;
+
+                    }
+                    exportExcelMiniTab.option("disabled", false);
+                    exportExcelMiniTab.option("text", "Выгрузка MinTab");
+                },
+                error: function (problem) {
+                    console.log("Ошибки:", problem);
+                    window.showNotification("Не удалось скачать файл", "Error");
+                    exportExcelMiniTab.option("disabled", false);
+                    exportExcelMiniTab.option("text", "Выгрузка MinTab");
+                }
+            });
+    }
+
+
+    function loadDataChartInMelt(idStat, avg, lMin, lMax, session, idMelt) {
+        var deferred = $.Deferred();
+        $.ajax({
+            url: '@Url.Action("GetStatTableChartInMelt", "Technology")',
+            data: {
+                idStat: idStat,
+                avg: avg,
+                l_min: lMin,
+                l_max: lMax,
+                session: session,
+                idMelt: idMelt,
+                samplingId: window.idSampling || localStorage._idSampling
+            },
+            success: function (json) {
+                if (json) {
+                    var data = JSON.parse(json);
+                    deferred.resolve(data);
+                } else {
+                    deferred.reject("Ошибка в загрузке данных");
+                }
+            },
+            error: function (problem) {
+                deferred.reject(problem);
+            }
+        });
+
+        return deferred.promise();
+    };
+
+    function loadDataParam(idStat, lMin, lMax) {
+        $.ajax({
+            url: '@Url.Action("DataParam", "Technology")',
+            data: {
+                mark_id: window.idMark,
+                castequipment_Id: idStat,
+                ts: window.stdId,
+                minval: lMin,
+                maxval: lMax
+            }
+        });
+    };
+</script>
+
+<!-- Графики -->
+<script>
+    //---------------График----------------
+    var chartStatAnalysis = {
+        zoomAndPan: {
+            valueAxis: "both",
+            argumentAxis: "both",
+            dragToZoom: true,
+            allowMouseWheel: true,
+            panKey: "shift"
+        },
+        commonSeriesSettings: {
+            type: "line",
+            argumentField: "VALUE_X",
+        },
+        argumentAxis: {
+            valueMarginsEnabled: false,
+            discreteAxisDivisionMode: "crossLabels",
+            //argumentType: "numeric",
+            grid: {
+                visible: false
+            }
+        },
+        legend: {
+            verticalAlignment: "bottom",
+            horizontalAlignment: "center",
+            itemTextPosition: "bottom"
+        },
+        //legend: {
+        //    visible: false
+        //},
+        title: {
+            text: "Стат анализ"
+        },
+        tooltip: {
+            enabled: true,
+            //shared: true
+            customizeTooltip: function (info) {
+                return {
+                    html: "<div>" +
+                        "<div class='tooltip-body'><div class='series-name'>" +
+                        "Значение равно" +
+                        ": </div><div class='value-text'>" +
+                        info.value +
+                        "</div><div class='series-name'>" +
+                        "Номер плавки" +
+                        ": </div><div class='value-text'>" +
+                        info.point.data.NOTE +
+                        "</div><div class='series-name'>" +
+                        "Дата и время" +
+                        ": </div><div class='value-text'>" +
+                        info.point.data.VALUE_X +
+                        "</div></div>"
+                };
+            }
+        },
+        crosshair: {
+            enabled: true,
+            horizontalLine: {
+                visible: true
+            },
+            label: {
+                visible: true
+            },
+        },
+        //onTooltipShown: function (info) {
+        //    let wrapper = $(".dxc-tooltip");
+        //    wrapper.css({
+        //        "pointer-events": "all"
+        //    });
+        //    wrapper.children().attr({
+        //        "pointer-events": "all"
+        //    });
+        //},
+        onPointClick: function (e) {
+            //window.tabOnclick(moduleContext.statAnalysisModuleId, "StatAnalysis", "По плавке", event);
+            localStorage.setItem('_dateFirst', ArraySelect.dateStart);
+            localStorage.setItem('_dateSecond', ArraySelect.dateEnd);
+            localStorage.setItem('_idLP', window.idLP || localStorage._idLP);
+            localStorage.setItem('_idCH', window.idCH || localStorage._idCH);
+            localStorage.setItem('_idMark', window.idMark || localStorage._idMark);
+            localStorage.setItem('_idSampling', window.idSampling || localStorage._idSampling);
+            localStorage.setItem('_idSamplingName', window.nameSampling || localStorage._idSamplingName);
+            localStorage.setItem('_stdId', window.stdId || localStorage._stdId);
+            localStorage.setItem('_sizeId', window.sizeId || localStorage._sizeId);
+            localStorage.setItem('_sizeName', window.sizeName || localStorage._sizeName);
+            localStorage.setItem('_idMelt', e.target.data.ID_MELT);
+            localStorage.setItem('_nameMelt', e.target.data.NOTE);
+
+            showPage();
+            getdxGridInMelt();
+        },
+        size: {
+            width: window.innerWidth - 50,
+            height: window.innerHeight / 2.5
+        },
+        adaptiveLayout: {
+            width: 400,
+            keepLabels: false
+        },
+        "export": {
+            enabled: true
+        }
+    };
+
+    var chartPPK = {
+        zoomAndPan: {
+            valueAxis: "both",
+            argumentAxis: "both",
+            dragToZoom: true,
+            allowMouseWheel: true,
+            panKey: "shift"
+        },
+        legend: {
+            visible: false
+        },
+        size: {
+            //width: window.innerWidth - 50,
+            height: window.innerHeight / 3
+        },
+        series: {
+            argumentField: "X",
+            valueField: "Y",
+            type: "bar",
+            color: '#ffaa66'
+        }
+    };
+
+    var chartInMelt = {
+        zoomAndPan: {
+            valueAxis: "both",
+            argumentAxis: "both",
+            dragToZoom: true,
+            allowMouseWheel: true,
+            panKey: "shift"
+        },
+        commonSeriesSettings: {
+            type: "line",
+            argumentField: "VALUE_X"
+        },
+        argumentAxis: {
+            valueMarginsEnabled: false,
+            discreteAxisDivisionMode: "crossLabels",
+            //argumentType: "numeric",
+            grid: {
+                visible: true
+            }
+        },
+        legend: {
+            verticalAlignment: "bottom",
+            horizontalAlignment: "center",
+            itemTextPosition: "bottom"
+        },
+        //legend: {
+        //    visible: false
+        //},
+        title: {
+            text: "Детальная информация по плавке"
+        },
+        tooltip: {
+            enabled: true,
+            //shared: true
+            customizeTooltip: function (info) {
+                return {
+                    html: "<div>" +
+                        "<div class='tooltip-body'><div class='series-name'>" +
+                        "Значение равно" +
+                        ": </div><div class='value-text'>" +
+                        info.value +
+                        "</div><div class='series-name'>" +
+                        "Номер пробы" +
+                        ": </div><div class='value-text'>" +
+                        info.point._dataItem.data.SORTNUM +
+                        //"<input type='checkbox'>" +
+                        "</div></div>"
+                };
+            }
+        },
+        size: {
+            width: window.innerWidth - 50,
+            height: window.innerHeight / 2.5
+        },
+        adaptiveLayout: {
+            width: 400,
+            keepLabels: false
+        },
+        "export": {
+            enabled: true
+        },
+        crosshair: {
+            enabled: true,
+            horizontalLine: {
+                visible: true
+            },
+            label: {
+                visible: true
+            },
+        }
+    };
+</script>
+
+
+<!-- По плавке-->
+<script type="text/javascript">
+    var startDateInMelt = new Date();
+    startDateInMelt.setDate(startDateInMelt.getDate() - 1);
+
+    var endDateInMelt = new Date();
+
+    var ArraySelectInMelt = {
+        dateStartInMelt: localStorage._dateFirst ? new Date(localStorage._dateFirst) : startDateInMelt,
+        dateEndInMelt: localStorage._dateSecond ? new Date(localStorage._dateSecond) : endDateInMelt
+    };
+
+    function getdxGridInMelt() {
+        $("#chartInMelt").hide();
+        let back1 = document.getElementById("back-button");
+        back1.onclick = showPage;
+        let dxGridTableResultInMelt = $('#dxTableResultInMelt').dxDataGrid(tableResultInMelt).dxDataGrid('instance');
+        loadDataStatResult(localStorage._idMelt).done(function (response) {
+            dataSource = new DevExpress.data.DataSource({
+                store: response
+            });
+            dxGridTableResultInMelt.option('dataSource', dataSource);
+        });
+
+        $("#dxTableResultInMelt").delay(600).show(0);
+        document.getElementById("numMelt").innerHTML = "Страница сформирована для № плавки: " + localStorage.getItem('_nameMelt');
+    };
+
+    window.showChartsInMelt = function (data/*, filter*/) {
+        if (data) {
+            loadDataChartInMelt(data.ID_STAT_EL, data.AVGVAR, data.L_MIN_CALC, data.L_MAX_CALC, data.SESSION_, localStorage._idMelt).done(function (response) {
+                showOnCancel();
+                if (response.length != 0) {
+
+                    let values = [];
+                    $.each(response, function (index, data) {
+                        $.each(data, function (key, value) {
+                            if (key === "VALUE") {
+                                values.push(value);
+                            }
+                        });
+                    });
+
+                    let valuesForMinMax = values.filter(function (val) {
+                        return val !== null;
+                    });
+
+                    let maxSource = Math.max.apply(null, valuesForMinMax);
+                    let minSource = Math.min.apply(null, valuesForMinMax);
+
+                    let startValue = undefined;
+                    let endValue = undefined;
+
+                    let TpMax = response[0].L_MAX != null ? response[0].L_MAX : 100;
+                    let TpMin = response[0].L_MIN != null ? response[0].L_MIN : 0;
+
+                    //let TpMax = filter.TpMax;
+                    //let TpMin = filter.TpMin;
+
+                    let UCL = response[0].L_MAX_T1 != null ? response[0].L_MAX_T1 : 100;
+                    let LCL = response[0].L_MIN_T1 != null ? response[0].L_MIN_T1 : 0;
+
+                    let maxValue = TpMax >= UCL ? TpMax : UCL;
+                    let minValue = TpMin <= LCL ? TpMin : LCL;
+
+                    if (maxSource > maxValue) {
+                        startValue = maxSource
+                    } else {
+                        startValue = maxValue
+                    }
+
+                    if (minSource > minValue) {
+                        endValue = minValue
+                    } else {
+                        endValue = minSource
+                    }
+
+                    // Отрисовка точек выше TpMax и UCL
+                    let pointValue = TpMax >= UCL ? UCL : TpMax;
+                    let customPoint = function (pointInfo) {
+                        return pointInfo.value > pointValue ? { color: 'red' } : {}
+                    };
+
+                    let valueAxis = {
+                        valueType: "numeric",
+                        valueMarginsEnabled: true,
+                        maxValueMargin: 0.1,
+                        visualRange: {
+                            startValue: startValue,
+                            endValue: endValue
+                        },
+                        constantLines: [
+                            {
+                                label: { text: "Tp Max " + TpMax },
+                                value: TpMax,
+                                color: "#ff33cc",
+                                dashStyle: "dash",
+                                paddingLeftRight: 100,
+                                width: 3
+                            },
+                            {
+                                label: { text: "Tp Min " + TpMin },
+                                value: TpMin,
+                                color: "#ff33cc",
+                                dashStyle: "dash",
+                                paddingLeftRight: 100,
+                                width: 3
+                            },
+                            {
+                                label: { text: "UCL " + UCL },
+                                value: UCL,
+                                color: "#e59e1f",
+                                dashStyle: "dash",
+                                width: 3
+                            },
+                            {
+                                label: { text: "LCL " + LCL },
+                                value: LCL,
+                                color: "#e59e1f",
+                                dashStyle: "dash",
+                                width: 3
+                            }
+                        ]
+                    };
+
+                    let nameEl = response[0].NAME_EL;
+
+                    let series = {
+                        valueField: "VALUE_Y", name: nameEl, color: "blue"
+                    };
+
+                    chartInMelt.valueAxis = valueAxis;
+                    chartInMelt.customizePoint = customPoint;
+                    chartInMelt.series = series;
+                    chartInMelt.dataSource = response;
+
+                    $('#chartInMelt').dxChart(chartInMelt).dxChart("instance");
+                }
+                else {
+                    DevExpress.ui.notify("Данных нет. График не построен", "warning", 3000);
+                }
+            });
+        }
+    };
+</script>
+
+<style>
+    .div {
+        display: block;
+    }
+
+    .main-grid {
+        width: 50%;
+        height: 100%;
+        float: left;
+    }
+
+    .tooltip-body {
+        width: 250px;
+    }
+
+        .tooltip-body .series-name {
+            font-weight: normal;
+            opacity: 0.6;
+            display: inline-block;
+            line-height: 1.5;
+            padding-right: 10px;
+            width: 110px;
+        }
+
+        .tooltip-body .value-text {
+            display: inline-block;
+            line-height: 1.5;
+            width: 100px;
+        }
+</style>
+
+<div class="statAnalys">
+    <div class="subPanel">
+        <div class="subPanelDiv">
+            <div style="overflow: hidden;">
+                <div style="float: left" id="dateBoxStart"></div>
+                <div style="float: left" id="dateBoxEnd"></div>
+                <div style="float: left" id="selectBoxSmena"></div>
+                <div style="float: left" id="selectBoxCastPlant"></div>
+                <div style="float: left" id="selectBoxSeries"></div>
+                <div style="float: left" id="selectBoxMarks"></div>
+                <div style="float: left" id="selectBoxStds"></div>
+                <div style="float: left" id="selectBoxSize"></div>
+                @*<div style="float: left" id="selectBoxSampling"></div>*@
+                <div style="float: left" id="dxDropDownTreeBox"></div>
+                <button id="buttonUpdate" style="width: 100px; height: 36px;" class="button small dark">Обновить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="subPanelLine"></div>
+
+    <div style="height: 85%; width: 100%; position: absolute">
+        <div style="height: 50%; position: relative;">
+            <div class="main-grid" id="dxTableResult"></div>
+            <div style="height: 50%; width: 45%; float: left; padding-left: 20px;" id="chartPPK"></div>
+        </div>
+
+        <div style="height: 40%; position: relative;">
+            <div style="position: fixed; margin-top: 0px; z-index: 1;" id="export-excel-mini-tab"></div>
+            <div style="position: fixed; margin-top: 0px; margin-left: 150px; z-index: 1;" id="export-excel"></div>
+            <div style="position: fixed; margin-top: 0px; margin-left: 191px; z-index: 1;" id="popup-line"></div>
+            <div class="chart-main" id="chartStatAnalysis"></div>
+        </div>
+    </div>
+
+    <div id="popup"></div>
+</div>
+
+
+
+<div class="statAnalys-inMelt hide">
+    <div class="subPanel">
+        <div class="subPanelDiv">
+            <div style="overflow: hidden;">
+                <div style="float:left;">
+                    <button id="back-button" class="button small red" title="Назад">
+                        <i class="material-icons" style="line-height: 32px;">keyboard_backspace</i>
+                    </button>
+                </div>
+                <div style="float: left; margin-left: 17px;">
+                    <span align="center" id="numMelt"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="subPanelLine"></div>
+
+    <div style="height: 85%; width: 100%; position: absolute">
+        <div style="height: 50%; position: relative;">
+            <div class="main-grid" id="dxTableResultInMelt"></div>
+            @*<div style="width: 45%; float: left" id="dxTableStat"></div>*@
+        </div>
+
+        <div style="height: 40%; position: relative;">
+            <div class="chart-main" id="chartInMelt"></div>
+        </div>
+    </div>
+</div>

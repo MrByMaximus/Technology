@@ -1,0 +1,243 @@
+﻿@using RBS_Core.Helpers
+@{
+    int accessType = 0;
+
+    var moduleAccessType = Context.Session.Get<object>("ModuleAccessType");
+    if (moduleAccessType != null)
+    {
+        int.TryParse(moduleAccessType.ToString(), out accessType);
+    }
+
+    var dateModel = StaticMethod.GetDateModel(
+        dateBegin: Context.Session.Get<DateTime?>("DateBegin") ?? DateTime.Now,
+        dateEnd: Context.Session.Get<DateTime?>("DateEnd") ?? DateTime.Now,
+        dateFormat: DateFormat.ShortDateShortTime
+        );
+}
+
+<script type="text/javascript">
+    DevExpress.setTemplateEngine("jsrender");
+
+    window.moduleAllowEdit = @accessType === 1;
+
+    window.moduleContext = {
+        GetMnemo: '@Url.Action("GetMnemo", "Technology")',
+        GetMnemoFile: '@Url.Action("GetMnemoFile", "Technology")',
+        GetMnemoDetail: '@Url.Action("GetMnemoDetail", "Technology")',
+        GetMnemoData: '@Url.Action("GetMnemoData", "Technology")',
+        GetTechnologyCollection: '@Url.Action("GetTechnologyCollection", "Technology")',
+
+        DownloadFile: '@Url.Action("DownloadFile", "Technology")',
+        DownloadMnemoFile: '@Url.Action("DownloadMnemoFile", "Technology")',
+
+        UploadMnemoFile: '@Url.Action("UploadMnemoFile", "Technology", new { mixerId = "_mixerId" })',
+
+        GetMixerGagesState: '@Url.Action("GetMixerGagesState", "Technology")',
+        ChangeGagesState: '@Url.Action("ChangeGagesState", "Technology")',
+
+        GetTagPredictionType: '@Url.Action("GetTagPredictionType", "Technology")',
+        GetTagPrediction: '@Url.Action("GetTagPrediction", "Technology")',
+    }
+
+    DevExpress.localization.loadMessages({
+        "en": {
+            "rbs_scheme_file_upload": "Upload scheme for mixer",
+            "rbs_scheme_file_download": "Download mixer scheme",
+            "rbs_upload": "Upload",
+            "rbs_download": "Download",
+        },
+        "ru": {
+            "rbs_scheme_file_upload": "Загрузить схему для миксера",
+            "rbs_scheme_file_download": "Скачать схему миксера",
+            "rbs_upload": "Загрузить",
+            "rbs_download": "Скачать",
+        }
+    });
+
+</script>
+
+<link href="~/build/modules/common/Technology/report-builder.min.css" rel="stylesheet" asp-append-version="true"/>
+<link href="~/build/modules/common/Technology/mnemo-schema.min.css" rel="stylesheet" asp-append-version="true"/>
+<script src="~/build/modules/common/Technology/mnemo-schema.min.js" asp-append-version="true"></script>
+
+<div class="subView">
+
+    <div class="subPanel" id="subPanelScheme">
+        <div class="subPanelDiv">
+            <div id="sbPlace" class="custom-selectbox"></div>
+        </div>
+        <div class="subPanelDiv">
+            <div id="sbMixer" class="custom-selectbox"></div>
+        </div>
+
+        <div class="subPanelDiv">
+            <button id="refresh-button" style="width: 150px; position: relative;" class="button small dark">
+                <span>Обновить</span>
+                <span style="width: 30px; position: absolute; right: 15px; opacity: 0.6;" id="timeToRefresh">&nbsp;</span>
+            </button>
+        </div>
+
+        <div class="subPanelDiv last-date-refresh" id="lastDateRefresh" title="Дата последнего обновления"></div>
+
+        <div class="subPanelDiv right">
+            <button class="mdc-button mdc-button--outlined mdc-button--icon-leading mdc-button__show-prediction hide">
+                <span class="mdc-button__ripple"></span>
+                <i class="material-icons mdc-button__icon" aria-hidden="true">online_prediction</i>
+                <span class="mdc-button__label">Прогноз</span>
+            </button>
+        </div>
+
+        <div class="subPanelDiv right">
+            <button class="mdc-button mdc-button--outlined mdc-button--icon-leading mdc-button__show-state">
+                <span class="mdc-button__ripple"></span>
+                <i class="material-icons mdc-button__icon" aria-hidden="true">settings</i>
+                <span class="mdc-button__label">Статус рассылки</span>
+            </button>
+        </div>
+
+        <div class="subPanelDiv right hide" id="fileUploader"></div>
+        <div class="subPanelDiv right" id="btnGroupSchemeFile"></div>
+
+    </div>
+
+    <div class="subPanel hide" id="subPanelTechnology">
+        <div class="subPanelDiv">
+            <button id="back-button" class="button small red" title="Вернутся к схеме">
+                <i class="material-icons" style="line-height: 32px;">keyboard_backspace</i>
+            </button>
+        </div>
+
+        <div class="subPanelDiv">
+            @{ await Html.RenderPartialAsync("DatePickerPartial", dateModel); }
+        </div>
+
+
+        <div class="subPanelDiv">
+            <div id="sbStep"></div>
+        </div>
+
+        <div class="subPanelDiv">
+            <button id="refreshTechnology-button" style="width: 100px;" class="button small dark">Обновить</button>
+        </div>
+
+    </div>
+
+    <div class="subPanelLine"></div>
+
+    <div class="subViewContent" id="subViewContent">
+        <div class="scheme">
+            <div class="scheme-container"></div>
+            <button class="mdc-icon-button scheme__fullscreen-button" aria-pressed="false">
+                <div class="mdc-icon-button__ripple"></div>
+                <i class="material-icons mdc-icon-button__icon mdc-icon-button__icon--on">fullscreen_exit</i>
+                <i class="material-icons mdc-icon-button__icon">fullscreen</i>
+            </button>
+            <div class="state-container hide">
+                <div class="state-container__grid"></div>
+                <button class="mdc-button mdc-button--raised mdc-button--icon-leading state-container__change-button">
+                    <span class="mdc-button__ripple"></span>
+                    <span class="mdc-button__label">Изменить статус</span>
+                </button>
+            </div>
+            <div class="prediction-container hide">
+                <div class="prediction-container__panel">
+                    <div class="prediction__show-all"></div>
+                    <div>
+                        <span>Тип прогноза:&nbsp;&nbsp;&nbsp;</span>
+                        <div class="prediction__type custom-selectbox"></div>
+                    </div>
+                </div>
+                <div class="prediction-container__grid"></div>
+            </div>
+        </div>
+
+        <div class="technology-container hide">
+            <div class="technology-container--grid technology-grid"></div>
+	        <div class="technology-container--chart">
+	        </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="mdc-dialog state-dialog">
+    <div class="mdc-dialog__container">
+        <div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" aria-labelledby="state-dialog-title" aria-describedby="state-dialog-content">
+
+            <h2 class="mdc-dialog__title" id="state-dialog-title">Статус рассылки</h2>
+
+            <div class="mdc-dialog__content" id="state-dialog-content">
+                <div class="change-state-object">
+                    <div class="change-state-object__title">&nbsp;</div>
+                    <div class="change-state-object__value"></div>
+                </div>
+
+                <div class="change-state-type">
+                    <div class="change-state-type__title">Статус:</div>
+                    <div class="change-state-type__value"></div>
+                </div>
+                
+                <div class="state-disable-container">
+                    <div class="change-state-date-begin">
+                        <div class="change-state-date-begin__title">Дата/время с:</div>
+                        <div class="change-state-date-begin__value change-state-date-begin__value--day"></div>
+                        <div class="change-state-date-begin__value change-state-date-begin__value--hour"></div>
+                    </div>
+
+                    <div class="change-state-date-end">
+                        <div class="change-state-date-end__title">Дата/время по:</div>
+                        <div class="change-state-date-end__value change-state-date-end__value--day"></div>
+                        <div class="change-state-date-end__value change-state-date-end__value--hour"></div>
+                    </div>
+
+                    <div class="change-state-request">
+                        <div class="change-state-request__title">Номер заявки:</div>
+                        <div class="change-state-request__value"></div>
+                    </div>
+                    
+                    <div class="change-state-note">
+                        <div class="change-state-note__title">Примечание:</div>
+                        <div class="change-state-note__value"></div>
+                    </div>
+                </div>
+            </div>
+            @{
+                if (accessType == 1)
+                {
+                    <div class="mdc-dialog__actions">
+                        <button type="button" class="mdc-button mdc-dialog__button state-dialog__close" data-mdc-dialog-action="close">
+                            <div class="mdc-button__ripple"></div>
+                            <span class="mdc-button__label">Отмена</span>
+                        </button>
+                        <button type="button" class="mdc-button mdc-button--unelevated mdc-dialog__button state-dialog__save">
+                            <div class="mdc-button__ripple"></div>
+                            <span class="mdc-button__label">Сохранить</span>
+                        </button>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+    <div class="mdc-dialog__scrim"></div>
+</div>
+
+<script type="text/x-jsrender" id="gage-state-tmpl">
+    {{if state == 1}}
+        {{if date_begin}}
+        <div class="cell-state" title="Действует, запланировано отключение">
+            <div class="orange_cell">&nbsp;</div>
+            <span>{{:gage_name}}</span>
+        </div>
+        {{else}}
+        <div class="cell-state" title="Действует">
+            <div class="green_cell">&nbsp;</div>
+            <span>{{:gage_name}}</span>
+        </div>
+        {{/if}}
+    {{else}}
+    <div class="cell-state" title="Отключено">
+        <div class="red_cell">&nbsp;</div>
+        <span>{{:gage_name}}</span>
+    </div>
+    {{/if}}
+</script>

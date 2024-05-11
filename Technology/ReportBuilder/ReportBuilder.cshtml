@@ -1,0 +1,128 @@
+﻿
+<link href="~/build/modules/common/Technology/report-builder.min.css" rel="stylesheet" asp-append-version="true"/>
+<script src="~/build/modules/common/Technology/report-builder.min.js" asp-append-version="true" ></script>
+
+<div class="module-view module-view_fixed">
+    <div class="module-view__content">
+        <div class="tree-container module-view module-view_fixed">
+            <div class="tree-container__header module-view__panel">
+                <div id="customToggle" class="custom-toggle">
+                    <div id="favoritesContainer" class="custom-toggle__child">
+	                    <div id="favoritesLookup"></div>
+	                    <i id="starIcon" class="material-icons md-26" style="margin-left: 10px; margin-right: 10px; margin-top: 5px;">star_border</i>
+                    </div>
+                    <div id="searchContainer" class="custom-toggle__child">
+                        <div id="search-tree"></div>
+                    </div>
+
+	                <div id="showFavorites" class="custom-toggle__child custom-toggle__button">
+		                <i class="material-icons md-default md-26" style="margin-left: 0px; margin-right: 0px;">star</i>
+	                </div>
+                    <div id="showSearch" class="custom-toggle__child custom-toggle__button">
+	                    <i class="material-icons md-default md-26" style="margin-left: 0px; margin-right: 0px;">search</i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tree-container__line "></div>
+            
+            <div class="tree-container__content module-view__content">
+                <div class="tree-view"></div>
+            </div>
+        </div>
+        
+        <div class="data-container module-view module-view_fixed">
+            <div class="data-container__header module-view__panel">
+                <div class="module-view__panel-div">
+                    <div id="dateComponent"></div>
+                </div>
+
+	            <div class="module-view__panel-div">
+		            <div id="sbStep"></div>
+	            </div>
+                
+	            <div class="module-view__panel-div">
+                    <div id="sbValuesMode"></div>
+	            </div>
+
+                <div class="module-view__panel-div">
+                    <button id="refreshButton" class="mdc-button mdc-button--outlined mdc-button--icon-leading">
+                        <span class="mdc-button__ripple"></span>
+                        <span class="mdc-button__label"></span>
+                    </button>
+                </div>
+                    
+                <div class="module-view__panel-div_right">
+                    <div id="cbChartShowAllValues" class="hide"></div>
+                </div>
+                <div class="module-view__panel-div_right">
+                    <div id="cbChartSeparate" class="hide"></div>
+                </div>
+                <div class="module-view__panel-div_right">
+                    <div id="exportBtn"></div>
+                </div>
+
+                <div class="module-view__panel-div_right">
+                    <div class="switch-field">
+                        <input type="radio" id="switch_left" name="switch_2" value="0" checked/>
+                        <label for="switch_left"><i class="material-icons md-20">grid_on</i></label>
+                        <input type="radio" id="switch_right" name="switch_2" value="1"/>
+                        <label for="switch_right"><i class="material-icons md-20">show_chart</i></label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="module-view__line"></div>
+
+            <div class="data-container__content module-view__content">
+                <div id="gridContainer" class="grid-container">
+                    <div id="grid" class="hide"></div>
+                </div>
+
+                <div id="chartContainer" class="hide" style="width: 100%; height: 100%;">
+                    <div id="chart" class="chart-container hide"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="mdc-dialog add-to-favorite-dialog">
+    <div class="mdc-dialog__container">
+        <div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" aria-labelledby="state-dialog-title" aria-describedby="state-dialog-content">
+
+            <h2 class="mdc-dialog__title" id="state-dialog-title">&nbsp;</h2>
+
+            <div class="mdc-dialog__content">
+                <div style="display: flex; flex-direction: row; align-items: baseline; padding-bottom: 10px;">
+                    <div class="favorite_name__title" style="flex: 1 0 auto; width: 120px;">&nbsp;</div>
+                    <div class="favorite_name__value" style="width: 100%; max-height: 250px; overflow: auto;"></div>
+                </div>
+            </div>
+
+            <div class="mdc-dialog__actions">
+                <button type="button" class="mdc-button mdc-dialog__button add-to-favorite-dialog__close" data-mdc-dialog-action="cancel">
+                    <div class="mdc-button__ripple"></div>
+                    <span class="mdc-button__label">Отмена</span>
+                </button>
+                <button type="button" class="mdc-button mdc-button--unelevated mdc-dialog__button add-to-favorite-dialog__save" disabled="true" data-mdc-dialog-action="accept">
+                    <div class="mdc-button__ripple"></div>
+                    <span class="mdc-button__label">Сохранить</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="mdc-dialog__scrim"></div>
+</div>
+
+
+
+<script type="text/x-jsrender" id="favorite-tmpl">
+    <div class="favorite">
+        <div class="favorite__name" title="{{:favorite_name}}">{{:favorite_name}}</div>
+        <div class="favorite__icon">
+            <i class="material-icons md-24">delete_forever</i>
+        </div>
+    </div>
+</script>
